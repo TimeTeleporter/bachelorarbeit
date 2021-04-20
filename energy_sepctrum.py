@@ -39,7 +39,7 @@ def find_roots(func, num_req_roots=6, gamma_value=1, startvalue=0.5, max_tries_p
     return results
 
 # For the x-koordinates of the plot
-xaxis_array = -np.linspace(-nearly_pi/2, nearly_pi/2, 100)
+xaxis_array = -np.linspace(-nearly_pi/2, nearly_pi/2, 1000)
 # To recieve the gamma factors times 2 over L for the calculation of the energy eigenvalues
 gamma_array = np.tan(xaxis_array)*2./box_L 
 
@@ -63,6 +63,8 @@ plt.plot(xaxis_array, energy_array_list[1], label="n=1")
 plt.plot(xaxis_array, energy_array_list[2], label="n=2")
 plt.plot(xaxis_array, energy_array_list[3], label="n=3")
 plt.plot(xaxis_array, energy_array_list[4], label="n=4")
+
+plt.ylim(0, 200)
 
 plt.title("Energy spectrum: gamma_+ = gamma_-")
 plt.xlabel("arctan(2*gamma/L)")
