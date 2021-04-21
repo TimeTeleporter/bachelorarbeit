@@ -1,7 +1,5 @@
-import typing
-from abc import ABC, abstractmethod
+from abc import ABC
 import numpy as np
-from numpy.core.numeric import NaN
 from scipy.optimize import brentq
 import matplotlib.pyplot as plt
 
@@ -14,28 +12,28 @@ BOX = 1
 EPSILON = 0.00001
 NEARLY_PI = 3.14
 
-def gamma_from_xaxis(xaxis):
-    return np.tan(xaxis)*BOX/2
-
 class energy_condition(ABC):
-    def __init__(self, func, xmin=0, xmax=2):
+    def __init__(self, func, xmin=EPSILON, xmax=1000):
         self.xmin = xmin
         self.xmax = xmax
         self.condition_equation = func
-
-    def return_energy_spectrum(self, gamma_array):
+    
+    def calculate_eigenvalue(self, gamma_array):
         results = []
         for gamma in gamma_array:
             def func_with_gamma(x):
                 return self.condition_equation(x, gamma)
             results.append(float(brentq(func_with_gamma, self.xmin, self.xmax)))
-        return np.power(np.array(results)*2/BOX/np.pi, 2)
+        return results
+
+    def return_energy_spectrum(self, gamma_array):
+        return np.power(np.array(self.calculate_eigenvalue(gamma_array))*2/BOX/np.pi, 2)
 
 class even_positive_spectrum(energy_condition):
     def even_positive(self, x, gamma):
         return gamma/x - np.tan(x)
 
-    def __init__(self, energy_level: int =2):
+    def __init__(self, energy_level=2):
         if energy_level == 0:
             xmin = EPSILON
             xmax = np.pi / 2 * (1 - EPSILON)
@@ -60,55 +58,66 @@ class even_negative_spectrum(energy_condition):
     def even_negative(self, x, gamma):
         return gamma/x + np.tanh(x)
     
-    def __init__(self, xmax=1000):
-        super().__init__(self.even_negative, xmin=EPSILON, xmax=xmax)
+    def __init__(self):
+        super().__init__(self.even_negative)
+    
+    def return_energy_spectrum(self, gamma_array):
+        positive_gamma = []
+        negative_gamma = []
+        include_negone = False
+        for gamma in gamma_array:
+            if gamma > 0:
+                positive_gamma.append(gamma)
+            elif gamma == 0:
+                include_negone = True
+            else:
+                negative_gamma.append(gamma)
+        positive_results = even_positive_spectrum(energy_level=0).return_energy_spectrum(positive_gamma)
+        negative_results = -super().return_energy_spectrum(negative_gamma)
+        if include_negone:
+            return np.array(list(positive_results) + [0] + list(negative_results))
+        else:
+            return np.array(list(positive_results) + list(negative_results))
 
 class odd_negative_spectrum(energy_condition):
     def odd_negative(self, x, gamma):
         return gamma/x + 1/np.tanh(x)
     
-    def __init__(self, xmax=1000):
-        super().__init__(self.odd_negative, xmin=EPSILON, xmax=xmax)
+    def __init__(self):
+        super().__init__(self.odd_negative)
+    
+    def return_energy_spectrum(self, gamma_array):
+        positive_gamma = []
+        negative_gamma = []
+        include_negone = False
+        for gamma in gamma_array:
+            if gamma > -1:
+                positive_gamma.append(gamma)
+            elif gamma == -1:
+                include_negone = True
+            else:
+                negative_gamma.append(gamma)
+        positive_results = odd_positive_spectrum(energy_level=0).return_energy_spectrum(positive_gamma)
+        negative_results = -super().return_energy_spectrum(negative_gamma)
+        if include_negone:
+            return np.array(list(positive_results) + [-1] + list(negative_results))
+        else:
+            return np.array(list(positive_results) + list(negative_results))
 
-positive_to_near_zero = list(-np.linspace(-NEARLY_PI/2, -EPSILON, 100))
-neg_near_zero_to_negative = list(-np.linspace(EPSILON, NEARLY_PI/2, 100))
-xaxis_array = np.array(positive_to_near_zero + [0] + neg_near_zero_to_negative)
+def gamma_from_xaxis(xaxis):
+    return np.tan(xaxis)*BOX/2
 
+xaxis_array = -np.linspace(-NEARLY_PI/2, NEARLY_PI/2, 100)
 gamma_array = gamma_from_xaxis(xaxis_array)
 
-spec0pos = even_positive_spectrum(energy_level=0)
-spec0neg = even_negative_spectrum()
-n0 = np.array(list(spec0pos.return_energy_spectrum(gamma_from_xaxis(positive_to_near_zero)))
-            + [0] 
-            + list(-spec0neg.return_energy_spectrum(gamma_from_xaxis(neg_near_zero_to_negative))))
-
-n1_gamma_pos = []
-n1_gamma_neg = []
-for gamma in gamma_array:
-    if gamma > -1.:
-        n1_gamma_pos.append(gamma)
-    if gamma < -1:
-        n1_gamma_neg.append(gamma)
-
-
-
-spec1pos = odd_positive_spectrum(energy_level=0)
-spec1neg = odd_negative_spectrum()
-n1 = np.array(list(spec1pos.return_energy_spectrum(n1_gamma_pos))
-            + [0 for gamma in gamma_array if gamma == -1]
-            + list(-spec1neg.return_energy_spectrum(n1_gamma_neg)))
-
-n1_xaxis = [xaxis_array[index] for index in range(len(n1))]
-
-spec2 = even_positive_spectrum(energy_level=1)
-n2 = spec2.return_energy_spectrum(gamma_array)
-spec3 = odd_positive_spectrum(energy_level=1)
-n3 = spec3.return_energy_spectrum(gamma_array)
-spec4 = even_positive_spectrum(energy_level=2)
-n4 = spec4.return_energy_spectrum(gamma_array)
+n0 = even_negative_spectrum().return_energy_spectrum(gamma_array)
+n1 = odd_negative_spectrum().return_energy_spectrum(gamma_array)
+n2 = even_positive_spectrum(energy_level=1).return_energy_spectrum(gamma_array)
+n3 = odd_positive_spectrum(energy_level=1).return_energy_spectrum(gamma_array)
+n4 = even_positive_spectrum(energy_level=2).return_energy_spectrum(gamma_array)
 
 plt.plot(xaxis_array, n0, label="n=0")
-plt.plot(n1_xaxis, n1, label="n=1")
+plt.plot(xaxis_array, n1, label="n=1")
 plt.plot(xaxis_array, n2, label="n=2")
 plt.plot(xaxis_array, n3, label="n=3")
 plt.plot(xaxis_array, n4, label="n=4")
