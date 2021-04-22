@@ -31,19 +31,20 @@ def pos_energy_momentumentum_distribution(momentum_k_array, energy_level=2, gamm
     return zaehler / nenner
 
 
-min_momentum_bin = -20
-max_momentum_bin = 20
+max_momentum_bin = 80
+min_momentum_bin = 20
 
 momentum_n_array = np.array(np.arange(min_momentum_bin, max_momentum_bin+1))
 momentum_k_array = np.array(momentum_n_array) * np.pi/BOX
-momentum_probability = pos_energy_momentumentum_distribution(momentum_k_array)
+momentum_probability = pos_energy_momentumentum_distribution(momentum_k_array, 7, 10)
 
 print(momentum_n_array)
 print(momentum_probability)
 
-plt.plot(momentum_n_array, momentum_probability)
+plt.bar(momentum_n_array, momentum_probability)
 
-plt.ylabel = "$\bra \phi_l | \phi_k \ket^2$"
-plt.xlabel = "n"
+plt.title("Momentum measurement probability")
+plt.xlabel("n")
+plt.ylabel(r'$|\langle \psi_l | \phi_k \rangle|^2$')
 
-plt.show
+plt.show()
