@@ -76,6 +76,23 @@ class odd_positive_spectrum(energy_condition):
         xmax = np.pi * (abs(energy_level) + 1) * (1 - EPSILON)
         super().__init__(self.odd_positive, xmin=xmin, xmax=xmax)
 
+class parity_antisymmetric_positive(energy_condition):
+    def __init__(self, energy_level: int):
+        self.energy_level = energy_level
+    
+    def calculate_eigenvalue(self, gamma_array):
+        return [self.energy_level * np.pi / 2 for gamma in gamma_array]
+
+class parity_antisymmetric_negative(energy_condition):
+    def __init__(self):
+        self.energy_level = 0
+    
+    def calculate_eigenvalue(self, gamma_array):
+        return [abs(gamma)  for gamma in gamma_array]
+    
+    def return_energy_spectrum(self, gamma_array):
+        return -super().return_energy_spectrum(gamma_array)
+
 
 class split_spectrum(energy_condition):
     def __init__(self, func):
